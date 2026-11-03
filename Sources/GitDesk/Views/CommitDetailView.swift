@@ -32,9 +32,10 @@ struct CommitDetailView: View {
                         .fixedSize(horizontal: false, vertical: true)
 
                     HStack(spacing: 8) {
-                        Image(systemName: "person.crop.circle.fill").font(.system(size: 24)).foregroundStyle(.secondary)
+                        AvatarView(name: commit.author, email: commit.email, size: 32)
                         VStack(alignment: .leading, spacing: 1) {
                             Text(commit.author).font(.system(size: 12, weight: .semibold))
+                            Text(commit.email).font(.system(size: 11)).foregroundStyle(.secondary).textSelection(.enabled)
                             Text("authored \(Theme.dateFormatter.string(from: commit.date))")
                                 .font(.system(size: 11)).foregroundStyle(.secondary)
                         }

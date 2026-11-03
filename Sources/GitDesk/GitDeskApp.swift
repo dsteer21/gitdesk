@@ -88,6 +88,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func scheduleSnapshotIfRequested() {
         guard let path = ProcessInfo.processInfo.environment["GITDESK_SNAPSHOT"] else { return }
         let delay = Double(ProcessInfo.processInfo.environment["GITDESK_SNAPSHOT_DELAY"] ?? "") ?? 4
+        // GITDESK_SNAPSHOT_TYPE="text": open the palette and type into whatever has keyboard focus.
+        if let typed = ProcessInfo.processInfo.environment["GITDESK_SNAPSHOT_TYPE"] {
+            DispatchQueue.main.asyncAfter(deadline: .now() + delay - 2) {
+                NotificationCenter.default.post(name: .debugOpenPalette, object: nil)
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + delay - 1) {
+                let responder = NSApp.keyWindow?.firstResponder
+                print("first responder:", responder.map { String(describing: type(of: $0)) } ?? "none")
+                (responder as? NSTextView)?.insertText(typed, replacementRange: NSRange(location: NSNotFound, length: 0))
+            }
+        }
         DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
             guard let view = NSApp.windows.first(where: { $0.isVisible && $0.contentView != nil })?.contentView,
                   let rep = view.bitmapImageRepForCachingDisplay(in: view.bounds) else { return }
@@ -102,6 +113,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 }
 
 struct SettingsView: View {
+    @AppStorage("useGravatar") private var useGravatar = true
     @AppStorage("pullMode") private var pullMode: PullMode = .merge
     @AppStorage("cloneFolder") private var cloneFolder = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Sites").path
 
@@ -111,6 +123,10 @@ struct SettingsView: View {
                 ForEach(PullMode.allCases) { Text($0.title).tag($0) }
             }
             TextField("Default clone folder", text: $cloneFolder)
+            Toggle("Show Gravatar avatars", isOn: $useGravatar)
+            Text("Looks up commit authors' email addresses (hashed) on Gravatar. When off, initials are shown instead.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
             Text("Pull All always uses fast-forward only, so it never creates merge commits or conflicts across your repositories.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
@@ -120,3 +136,9 @@ struct SettingsView: View {
         .frame(width: 480)
     }
 }
+
+#if DEBUG
+extension Notification.Name {
+    static let debugOpenPalette = Notification.Name("GitDesk.debugOpenPalette")
+}
+#endif

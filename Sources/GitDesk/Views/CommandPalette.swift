@@ -8,10 +8,16 @@ struct CommandPalette: View {
     @State private var items: [RepoStore.PaletteItem] = []
     @FocusState private var focused: Bool
 
+    /// Items containing every typed word win; loose fuzzy matching is only a fallback.
     private var results: [RepoStore.PaletteItem] {
-        guard !query.isEmpty else { return items }
-        return items
-            .compactMap { item in Fuzzy.score(query, in: item.title + " " + item.subtitle).map { (item, $0) } }
+        let trimmed = query.trimmed
+        guard !trimmed.isEmpty else { return items }
+        let words = trimmed.split(separator: " ").map(String.init)
+        let text = { (item: RepoStore.PaletteItem) in item.title + " " + item.subtitle }
+
+        let exact = items.filter { item in words.allSatisfy { text(item).localizedCaseInsensitiveContains($0) } }
+        return (exact.isEmpty ? items : exact)
+            .compactMap { item in Fuzzy.score(trimmed, in: text(item)).map { (item, $0) } }
             .sorted { $0.1 > $1.1 }
             .map(\.0)
     }
@@ -52,8 +58,9 @@ struct CommandPalette: View {
                     ScrollView {
                         LazyVStack(spacing: 0) {
                             ForEach(Array(results.prefix(60).enumerated()), id: \.element.id) { index, item in
+                                // Identify rows by item, not position, or SwiftUI keeps showing stale rows as the list filters.
                                 row(item, highlighted: index == highlighted)
-                                    .id(index)
+                                    .id(item.id)
                                     .onTapGesture {
                                         highlighted = index
                                         run(results)
@@ -65,7 +72,9 @@ struct CommandPalette: View {
                         }
                     }
                     .frame(maxHeight: 380)
-                    .onChange(of: highlighted) { _, index in proxy.scrollTo(index) }
+                    .onChange(of: highlighted) { _, index in
+                        if results.indices.contains(index) { proxy.scrollTo(results[index].id) }
+                    }
                 }
             }
             .frame(width: 600)

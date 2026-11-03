@@ -5,7 +5,8 @@ struct GraphView: View {
     let repo: Repo
 
     static let rowHeight: CGFloat = 28
-    static let laneWidth: CGFloat = 16
+    static let laneWidth: CGFloat = 22
+    static let avatarSize: CGFloat = 18
     static let maxVisibleLanes = 14
 
     private var graphWidth: CGFloat {
@@ -118,7 +119,7 @@ struct CommitRow: View {
         HStack(spacing: 0) {
             RefsCell(commit: commit, laneColour: Theme.lane(entry.row.lane))
                 .frame(width: Self.refsWidth, alignment: .leading)
-            GraphCell(row: entry.row, isMerge: commit.isMerge, isHead: commit.isHead)
+            GraphCell(row: entry.row, commit: commit)
                 .frame(width: graphWidth, height: GraphView.rowHeight)
                 .clipped()
             Text(commit.subject)
@@ -231,15 +232,18 @@ private struct RefsCell: View {
 }
 
 /// Draws one row of the lane graph.
+/// Ordinary commits show the author's avatar in the node; merges are a small dot.
 private struct GraphCell: View {
     let row: GraphRow
-    let isMerge: Bool
-    let isHead: Bool
+    let commit: Commit
+
+    private func x(_ lane: Int) -> CGFloat { CGFloat(lane) * GraphView.laneWidth + GraphView.laneWidth / 2 + 4 }
 
     var body: some View {
+        let isMerge = commit.isMerge
+        let isHead = commit.isHead
         Canvas { context, size in
             let mid = size.height / 2
-            func x(_ lane: Int) -> CGFloat { CGFloat(lane) * GraphView.laneWidth + GraphView.laneWidth / 2 + 4 }
 
             func segment(from start: CGPoint, to end: CGPoint, colour: Color) {
                 var path = Path()
@@ -261,10 +265,16 @@ private struct GraphCell: View {
             }
 
             let colour = Theme.lane(row.lane)
-            let radius: CGFloat = isMerge ? 4 : 6
+            let radius: CGFloat = isMerge ? 4 : GraphView.avatarSize / 2 + 1.5
             let node = CGRect(x: x(row.lane) - radius, y: mid - radius, width: radius * 2, height: radius * 2)
             context.fill(Path(ellipseIn: node), with: .color(isMerge ? colour : Theme.background))
             context.stroke(Path(ellipseIn: node), with: .color(colour), lineWidth: isHead ? 3 : 2)
+        }
+        .overlay(alignment: .leading) {
+            if !isMerge {
+                AvatarView(name: commit.author, email: commit.email, size: GraphView.avatarSize)
+                    .offset(x: x(row.lane) - GraphView.avatarSize / 2)
+            }
         }
     }
 }

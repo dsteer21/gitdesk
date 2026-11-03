@@ -60,6 +60,9 @@ struct MainView: View {
                 await store.refreshAllStatuses()
             }
         }
+        #if DEBUG
+        .onReceive(NotificationCenter.default.publisher(for: .debugOpenPalette)) { _ in store.showPalette = true }
+        #endif
         .task {
             // Light polling of the open repo's working tree so the WIP panel stays current.
             while !Task.isCancelled {
