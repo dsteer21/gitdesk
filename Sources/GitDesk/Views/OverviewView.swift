@@ -21,6 +21,7 @@ struct OverviewView: View {
                 Button { Task { await store.fetchAll() } } label: { Label("Fetch All", systemImage: "arrow.triangle.2.circlepath") }
                 Button { Task { await store.pullAll() } } label: { Label("Pull All", systemImage: "arrow.down.to.line") }
                     .buttonStyle(.borderedProminent)
+                    .tint(Theme.accent)
             }
             .disabled(store.bulkOperation != nil)
             .padding(16)
@@ -42,7 +43,7 @@ struct OverviewView: View {
                     TableColumn("Repository") { repo in
                         HStack {
                             Image(systemName: repo.exists ? "folder.fill" : "exclamationmark.triangle.fill")
-                                .foregroundStyle(repo.exists ? Color.accentColor : .orange)
+                                .foregroundStyle(repo.exists ? Theme.accent : .orange)
                             Text(repo.name).fontWeight(.medium)
                             if repo.busy != nil { ProgressView().controlSize(.mini) }
                         }

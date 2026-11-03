@@ -151,7 +151,7 @@ private struct RepoRow: View {
     var body: some View {
         HStack(spacing: 8) {
             Image(systemName: repo.exists ? "folder.fill" : "exclamationmark.triangle.fill")
-                .foregroundStyle(repo.exists ? Color.accentColor : .orange)
+                .foregroundStyle(repo.exists ? Theme.accent : .orange)
             VStack(alignment: .leading, spacing: 1) {
                 Text(repo.name).font(.system(size: 12, weight: .medium)).lineLimit(1)
                 Text(repo.exists ? repo.branch : "Folder missing")

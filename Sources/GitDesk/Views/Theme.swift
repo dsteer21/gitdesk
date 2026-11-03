@@ -6,6 +6,8 @@ enum Theme {
     static let toolbar = Color(red: 0.09, green: 0.10, blue: 0.12)
     static let selection = Color(red: 0.20, green: 0.32, blue: 0.50)
     static let hover = Color.white.opacity(0.05)
+    /// Muted blue (#324772) used instead of the bright system accent on the All Repositories screen.
+    static let accent = Color(red: 50 / 255, green: 71 / 255, blue: 114 / 255)
 
     /// GitKraken-style lane colours.
     static let lanes: [Color] = [

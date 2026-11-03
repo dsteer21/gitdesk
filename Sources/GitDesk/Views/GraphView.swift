@@ -265,10 +265,10 @@ private struct GraphCell: View {
             }
 
             let colour = Theme.lane(row.lane)
-            let radius: CGFloat = isMerge ? 4 : GraphView.avatarSize / 2 + 1.5
+            let radius: CGFloat = isMerge ? 4 : GraphView.avatarSize / 2 + 1
             let node = CGRect(x: x(row.lane) - radius, y: mid - radius, width: radius * 2, height: radius * 2)
             context.fill(Path(ellipseIn: node), with: .color(isMerge ? colour : Theme.background))
-            context.stroke(Path(ellipseIn: node), with: .color(colour), lineWidth: isHead ? 3 : 2)
+            context.stroke(Path(ellipseIn: node), with: .color(colour), lineWidth: isHead ? 2 : 1)
         }
         .overlay(alignment: .leading) {
             if !isMerge {

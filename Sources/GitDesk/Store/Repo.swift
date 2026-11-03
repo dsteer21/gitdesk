@@ -250,6 +250,36 @@ final class Repo: Identifiable {
         diff = nil
     }
 
+    /// Appends a pattern (relative to the repo root) to the top-level .gitignore, unless it is already there.
+    func addToGitignore(_ pattern: String, trackedPaths: [String] = []) async {
+        await perform("Add to .gitignore", fullRefresh: false) {
+            let file = url.appendingPathComponent(".gitignore")
+            var contents = (try? String(contentsOf: file, encoding: .utf8)) ?? ""
+            let existing = contents.split(whereSeparator: \.isNewline).map { $0.trimmingCharacters(in: .whitespaces) }
+            guard !existing.contains(pattern) else { return "\(pattern) is already in .gitignore" }
+            if !contents.isEmpty && !contents.hasSuffix("\n") { contents += "\n" }
+            contents += pattern + "\n"
+            try contents.write(to: file, atomically: true, encoding: .utf8)
+            // Ignoring doesn't affect files git already tracks, so say so rather than leave them listed silently.
+            if !trackedPaths.isEmpty {
+                return "Added \(pattern) to .gitignore. It's already tracked, so changes still show until you run git rm --cached"
+            }
+            return "Added \(pattern) to .gitignore"
+        }
+        diff = nil
+    }
+
+    /// A root-anchored .gitignore pattern matching exactly this path; folders get a trailing slash.
+    static func gitignorePattern(for path: String, isFolder: Bool = false) -> String {
+        // Escape glob characters so names like "file[1].txt" match literally.
+        var escaped = ""
+        for char in path {
+            if "*?[]\\".contains(char) { escaped.append("\\") }
+            escaped.append(char)
+        }
+        return "/" + escaped + (isFolder ? "/" : "")
+    }
+
     private func refreshOpenDiff() {
         guard let diff else { return }
         // The file has moved between staged/unstaged; follow it if we can, otherwise close the diff.

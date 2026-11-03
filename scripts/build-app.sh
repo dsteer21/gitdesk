@@ -6,13 +6,16 @@ cd "${0:A:h}/.."
 APP="build/GitDesk.app"
 VERSION="${VERSION:-1.0.0}"
 
-echo "→ Compiling (release)…"
-swift build -c release --arch arm64
+# Universal binary (Apple Silicon + Intel) so the app runs on any Mac with macOS 14+.
+ARCHS=(--arch arm64 --arch x86_64)
+
+echo "→ Compiling (release, universal)…"
+swift build -c release "${ARCHS[@]}"
 
 echo "→ Bundling $APP…"
 rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
-BIN_DIR="$(swift build -c release --arch arm64 --show-bin-path)"
+BIN_DIR="$(swift build -c release "${ARCHS[@]}" --show-bin-path)"
 cp "$BIN_DIR/GitDesk" "$APP/Contents/MacOS/GitDesk"
 [[ -f Resources/AppIcon.icns ]] && cp Resources/AppIcon.icns "$APP/Contents/Resources/AppIcon.icns"
 

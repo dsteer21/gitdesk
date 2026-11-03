@@ -88,6 +88,26 @@ enum SelfTest {
         await repo.pullForBulk()
         check("second pull-all is up to date", repo.lastOutcome?.kind == .upToDate)
 
+        // 7. Add to .gitignore: a literal file name with glob characters, a folder, then an extension.
+        let fm = FileManager.default
+        try? fm.createDirectory(at: url.appendingPathComponent("logs/sub"), withIntermediateDirectories: true)
+        try? "x\n".write(to: url.appendingPathComponent("logs/sub/debug[1].log"), atomically: true, encoding: .utf8)
+        try? "x\n".write(to: url.appendingPathComponent("logs/sub/debug1.log"), atomically: true, encoding: .utf8)
+        try? "x\n".write(to: url.appendingPathComponent("notes.tmp"), atomically: true, encoding: .utf8)
+        await repo.refreshStatus()
+        let paths = { repo.unstaged.map(\.path) }
+        await repo.addToGitignore(Repo.gitignorePattern(for: "logs/sub/debug[1].log"))
+        check("ignored file with brackets literally", !paths().contains("logs/sub/debug[1].log") && paths().contains("logs/sub/debug1.log"))
+        await repo.addToGitignore(Repo.gitignorePattern(for: "logs", isFolder: true))
+        check("ignored folder", !paths().contains { $0.hasPrefix("logs/") })
+        await repo.addToGitignore("*.tmp")
+        await repo.addToGitignore("*.tmp")
+        let ignoreFile = (try? String(contentsOf: url.appendingPathComponent(".gitignore"), encoding: .utf8)) ?? ""
+        check("ignored extension, no duplicate line", !paths().contains("notes.tmp") && ignoreFile == "/logs/sub/debug\\[1\\].log\n/logs/\n*.tmp\n")
+        try? fm.removeItem(at: url.appendingPathComponent("logs"))
+        try? fm.removeItem(at: url.appendingPathComponent("notes.tmp"))
+        try? fm.removeItem(at: url.appendingPathComponent(".gitignore"))
+
         print("SELFTEST DONE")
     }
 }

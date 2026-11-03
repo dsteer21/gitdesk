@@ -106,6 +106,7 @@ private struct FileSection: View {
                                 if let discard {
                                     Button("Discard Changes…", role: .destructive) { discard([file]) }
                                 }
+                                if source == .unstaged { ignoreMenu(file) }
                                 Divider()
                                 Button("Reveal in Finder") {
                                     NSWorkspace.shared.activateFileViewerSelecting([repo.url.appendingPathComponent(file.path)])
@@ -121,6 +122,43 @@ private struct FileSection: View {
                 }
             }
         }
+    }
+}
+
+extension FileSection {
+    /// "Add to .gitignore" submenu: the file, each folder it sits in, or every file with its extension.
+    @ViewBuilder
+    func ignoreMenu(_ file: FileChange) -> some View {
+        let tracked = file.status == "?" ? [] : [file.path]
+        let folders = ancestorFolders(of: file.path)
+        let ext = (file.fileName as NSString).pathExtension
+        Menu("Add to .gitignore") {
+            Button("Ignore \(file.fileName)") {
+                Task { await repo.addToGitignore(Repo.gitignorePattern(for: file.path), trackedPaths: tracked) }
+            }
+            ForEach(folders, id: \.self) { folder in
+                Button("Ignore Folder \(folder)/") {
+                    Task { await repo.addToGitignore(Repo.gitignorePattern(for: folder, isFolder: true), trackedPaths: tracked) }
+                }
+            }
+            if !ext.isEmpty {
+                Divider()
+                Button("Ignore All *.\(ext) Files") {
+                    Task { await repo.addToGitignore("*." + ext, trackedPaths: tracked) }
+                }
+            }
+        }
+    }
+
+    /// "a/b/c.txt" → ["a/b", "a"]: the nearest folder first.
+    private func ancestorFolders(of path: String) -> [String] {
+        var folders: [String] = []
+        var current = (path as NSString).deletingLastPathComponent
+        while !current.isEmpty {
+            folders.append(current)
+            current = (current as NSString).deletingLastPathComponent
+        }
+        return folders
     }
 }
 
