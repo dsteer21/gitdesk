@@ -53,12 +53,9 @@ Requires macOS 14+ and Xcode (or the Swift toolchain).
 
 Copy the DMG to the other Mac (AirDrop, Teams, USB…), open it and drag **GitDesk** onto **Applications**. The app is universal (Apple Silicon and Intel) and needs macOS 14 or later, plus git (`xcode-select --install` or Homebrew).
 
-The app isn't notarised by Apple, so the first launch is blocked with *"GitDesk" can't be opened / Apple could not verify…*. Either:
+Releases are signed with a Developer ID and notarised by Apple, so GitDesk opens straight away with no security warnings.
 
-- open **System Settings → Privacy & Security**, scroll down and click **Open Anyway** next to the GitDesk message; or
-- run `xattr -dr com.apple.quarantine /Applications/GitDesk.app` once in Terminal.
-
-After that it opens normally.
+Building the DMG yourself? `make-dmg.sh` signs and notarises automatically when the Mac has a **Developer ID Application** certificate and a `gitdesk-notary` keychain profile (`xcrun notarytool store-credentials gitdesk-notary --apple-id … --team-id …`). Without them it builds an ad-hoc-signed DMG, which other Macs will only open via **System Settings → Privacy & Security → Open Anyway**.
 
 ### Publishing a release
 

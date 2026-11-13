@@ -41,9 +41,17 @@ cat > "$APP/Contents/Info.plist" <<PLIST
 </plist>
 PLIST
 
-# Ad-hoc signature so Gatekeeper lets a locally built app run.
-codesign --force --sign - "$APP"
-echo "✓ Built $APP"
+# Sign with the Developer ID certificate when it's in the keychain (needed for notarisation:
+# hardened runtime + secure timestamp). Without one, fall back to an ad-hoc signature,
+# which is fine for local use. SIGN_IDENTITY overrides the automatic choice.
+SIGN_IDENTITY="${SIGN_IDENTITY:-$(security find-identity -v -p codesigning | sed -n 's/.*"\(Developer ID Application: [^"]*\)".*/\1/p' | head -1)}"
+if [[ -n "$SIGN_IDENTITY" ]]; then
+    codesign --force --options runtime --timestamp --sign "$SIGN_IDENTITY" "$APP"
+    echo "✓ Built $APP (signed: $SIGN_IDENTITY)"
+else
+    codesign --force --sign - "$APP"
+    echo "✓ Built $APP (ad-hoc signed; no Developer ID certificate found)"
+fi
 
 if [[ "${1:-}" == "--install" ]]; then
     rm -rf /Applications/GitDesk.app

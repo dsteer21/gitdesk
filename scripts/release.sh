@@ -24,9 +24,12 @@ BRANCH="$(git rev-parse --abbrev-ref HEAD)"
 
 VERSION="$VERSION" ./scripts/make-dmg.sh
 
+# Only publish builds Apple has notarised (stapled ticket on the DMG).
+xcrun stapler validate -q "build/GitDesk-${VERSION}.dmg" || fail "The DMG isn't notarised; check the Developer ID certificate and notary profile"
+
 NOTES="Download **GitDesk.dmg**, open it and drag GitDesk onto Applications. Needs macOS 14 or later and git.
 
-The app isn't notarised, so on first launch open **System Settings → Privacy & Security** and click **Open Anyway** (or run \`xattr -dr com.apple.quarantine /Applications/GitDesk.app\`)."
+Signed with a Developer ID and notarised by Apple, so it opens without any security warnings."
 
 echo "→ Publishing $TAG…"
 "$GH" release create "$TAG" "build/GitDesk-${VERSION}.dmg" build/GitDesk.dmg \
