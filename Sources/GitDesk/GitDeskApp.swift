@@ -99,10 +99,27 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 (responder as? NSTextView)?.insertText(typed, replacementRange: NSRange(location: NSNotFound, length: 0))
             }
         }
+        // GITDESK_SNAPSHOT_DIFF="path/in/repo": open that file's unstaged diff.
+        if let path = ProcessInfo.processInfo.environment["GITDESK_SNAPSHOT_DIFF"] {
+            DispatchQueue.main.asyncAfter(deadline: .now() + delay - 2) {
+                NotificationCenter.default.post(name: .debugOpenDiff, object: path)
+            }
+        }
+        // GITDESK_SNAPSHOT_COMMIT_PROMPT=1: open the ⌘P "Commit & Push…" prompt; the snapshot is of the sheet.
+        if ProcessInfo.processInfo.environment["GITDESK_SNAPSHOT_COMMIT_PROMPT"] != nil {
+            DispatchQueue.main.asyncAfter(deadline: .now() + delay - 2) {
+                NotificationCenter.default.post(name: .debugOpenCommitPrompt, object: nil)
+            }
+        }
         DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
-            guard let view = NSApp.windows.first(where: { $0.isVisible && $0.contentView != nil })?.contentView,
+            let main = NSApp.windows.first(where: { $0.isVisible && $0.contentView != nil })
+            let sheet = main?.attachedSheet
+            guard let view = (sheet ?? main)?.contentView,
                   let rep = view.bitmapImageRepForCachingDisplay(in: view.bounds) else { return }
             view.cacheDisplay(in: view.bounds, to: rep)
+            // An open sheet would stop the app quitting. (Sheet snapshots come out pale: their
+            // translucent background isn't captured, but the sheet itself is dark.)
+            if let sheet { sheet.sheetParent?.endSheet(sheet) }
             try? rep.representation(using: .png, properties: [:])?.write(to: URL(fileURLWithPath: path))
             NSApp.terminate(nil)
         }
@@ -140,5 +157,7 @@ struct SettingsView: View {
 #if DEBUG
 extension Notification.Name {
     static let debugOpenPalette = Notification.Name("GitDesk.debugOpenPalette")
+    static let debugOpenDiff = Notification.Name("GitDesk.debugOpenDiff")
+    static let debugOpenCommitPrompt = Notification.Name("GitDesk.debugOpenCommitPrompt")
 }
 #endif

@@ -47,6 +47,9 @@ struct MainView: View {
             if store.showPalette { CommandPalette() }
         }
         .sheet(isPresented: $store.showClone) { CloneSheet() }
+        .sheet(isPresented: $store.showCommitPrompt) {
+            if let repo = store.selected { CommitPromptSheet(repo: repo) }
+        }
         .sheet(isPresented: $store.showNewBranch) {
             if let repo = store.selected { NewBranchSheet(repo: repo) }
         }
@@ -62,6 +65,12 @@ struct MainView: View {
         }
         #if DEBUG
         .onReceive(NotificationCenter.default.publisher(for: .debugOpenPalette)) { _ in store.showPalette = true }
+        .onReceive(NotificationCenter.default.publisher(for: .debugOpenDiff)) { note in
+            if let repo = store.selected, let file = repo.unstaged.first(where: { $0.path == note.object as? String }) {
+                repo.showDiff(file, source: .unstaged)
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .debugOpenCommitPrompt)) { _ in store.showCommitPrompt = true }
         #endif
         .task {
             // Light polling of the open repo's working tree so the WIP panel stays current.

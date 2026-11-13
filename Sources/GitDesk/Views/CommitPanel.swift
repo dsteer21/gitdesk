@@ -223,7 +223,7 @@ private struct CommitBox: View {
             HStack {
                 SectionHeader(title: "Commit")
                 Spacer()
-                reuseMenu
+                ReuseMessageMenu(repo: repo)
             }
 
             Toggle(isOn: $repo.amend) {
@@ -303,9 +303,13 @@ private struct CommitBox: View {
         .padding(10)
         .background(Theme.panel)
     }
+}
 
-    /// "Reuse message" menu: last commit in this repo plus messages recently used in any repo.
-    private var reuseMenu: some View {
+/// "Reuse message" menu: last commit in this repo plus messages recently used in any repo.
+struct ReuseMessageMenu: View {
+    let repo: Repo
+
+    var body: some View {
         Menu {
             if let last = repo.lastCommitMessage {
                 Section("Last commit in \(repo.name)") {

@@ -48,8 +48,7 @@ Requires macOS 14+ and Xcode (or the Swift toolchain).
 **[Download the latest GitDesk.dmg](https://github.com/dsteer21/gitdesk/releases/latest/download/GitDesk.dmg)**, or build it yourself:
 
 ```sh
-./scripts/make-dmg.sh                    # builds build/GitDesk-1.0.0.dmg
-VERSION=1.1.0 ./scripts/make-dmg.sh      # sets the version shown in the app and the file name
+./scripts/make-dmg.sh                    # builds build/GitDesk-<version>.dmg (version from ./VERSION)
 ```
 
 Copy the DMG to the other Mac (AirDrop, Teams, USB…), open it and drag **GitDesk** onto **Applications**. The app is universal (Apple Silicon and Intel) and needs macOS 14 or later, plus git (`xcode-select --install` or Homebrew).
@@ -63,12 +62,14 @@ After that it opens normally.
 
 ### Publishing a release
 
+The version number lives in the `VERSION` file. Bump it in the same commit as the changes it releases.
+
 ```sh
 gh auth login                    # once
-./scripts/release.sh 1.1.0       # commit and push first; the script refuses otherwise
+./scripts/release.sh             # commit and push first; the script refuses otherwise
 ```
 
-Builds the DMG, tags the pushed `HEAD` as `v1.1.0` and uploads `GitDesk-1.1.0.dmg` and `GitDesk.dmg` to GitHub Releases. The download link above always points at the newest release.
+Builds the DMG, tags the pushed `HEAD` as `v<version>` and uploads `GitDesk-<version>.dmg` and `GitDesk.dmg` to GitHub Releases. The download link above always points at the newest release.
 
 For development, `swift run` launches it straight from the package.
 
@@ -94,4 +95,5 @@ Sources/GitDesk/
   Store/                  Repo (per-repo state + operations), RepoStore (list, bulk ops, palette)
   Views/                  SwiftUI views
 scripts/                  build-app.sh, make-dmg.sh, release.sh, make-icon.swift
+VERSION                   current version (read by the scripts)
 ```

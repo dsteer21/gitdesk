@@ -1,17 +1,18 @@
 #!/bin/zsh
-# Publishes a GitHub release: ./scripts/release.sh 1.1.0
+# Publishes a GitHub release of the version in ./VERSION: ./scripts/release.sh
 # Builds the DMG, tags the pushed HEAD as v<version> and uploads GitDesk-<version>.dmg plus GitDesk.dmg,
 # so https://github.com/dsteer21/gitdesk/releases/latest/download/GitDesk.dmg always serves the newest build.
 set -euo pipefail
 
 cd "${0:A:h}/.."
-VERSION="${1:-}"
+VERSION="${1:-$(<VERSION)}"
 TAG="v${VERSION}"
 GH="$(command -v gh || echo /opt/homebrew/bin/gh)"
 
 fail() { echo "✗ $1" >&2; exit 1; }
 
-[[ "$VERSION" =~ '^[0-9]+\.[0-9]+\.[0-9]+$' ]] || fail "Usage: ./scripts/release.sh <version>, e.g. 1.1.0"
+[[ "$VERSION" =~ '^[0-9]+\.[0-9]+\.[0-9]+$' ]] || fail "VERSION file must hold a version like 1.1.0"
+[[ "$VERSION" == "$(<VERSION)" ]] || fail "$VERSION doesn't match the VERSION file ($(<VERSION)); update and commit it first"
 "$GH" auth status >/dev/null 2>&1 || fail "Log in to GitHub first: gh auth login"
 
 # The release must match code that is on GitHub, so refuse uncommitted or unpushed work.

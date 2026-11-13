@@ -323,8 +323,9 @@ final class Repo: Identifiable {
         let message = draftMessage
 
         let ok = await perform(amending ? "Amend" : "Commit") {
-            // Nothing staged: behave like "stage all and commit".
-            if staged.isEmpty && !amending { try await git(["add", "-A"]) }
+            // Nothing staged: behave like "stage all and commit". This applies to amend too,
+            // or squashing your changes into the previous commit would silently leave them out.
+            if staged.isEmpty { try await git(["add", "-A"]) }
             var args = ["commit", "-m", summary]
             let body = draftBody.trimmed
             if !body.isEmpty { args += ["-m", body] }

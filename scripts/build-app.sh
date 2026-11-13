@@ -4,7 +4,8 @@ set -euo pipefail
 
 cd "${0:A:h}/.."
 APP="build/GitDesk.app"
-VERSION="${VERSION:-1.0.0}"
+# The version lives in ./VERSION; VERSION=x.y.z in the environment overrides it.
+VERSION="${VERSION:-$(<VERSION)}"
 
 # Universal binary (Apple Silicon + Intel) so the app runs on any Mac with macOS 14+.
 ARCHS=(--arch arm64 --arch x86_64)

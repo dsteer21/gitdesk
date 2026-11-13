@@ -46,6 +46,7 @@ enum SelfTest {
         let headAfter = await shell(["rev-parse", "HEAD"], in: url)
         let remoteHead = await shell(["rev-parse", "@{u}"], in: url)
         check("amend rewrote HEAD", headBefore != headAfter)
+        check("amend included the unstaged change", await shell(["show", "HEAD:a.txt"], in: url) == "second" && repo.changeCount == 0)
         check("amend + push updated remote (force with lease)", remoteHead == headAfter && !repo.pendingForcePush)
         check("message history recorded", MessageHistory.all.first == "[GIT-9001] First push")
 

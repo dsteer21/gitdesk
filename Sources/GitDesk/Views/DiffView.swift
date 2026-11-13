@@ -15,7 +15,9 @@ struct DiffView: View {
                     ContentUnavailableView("No textual changes", systemImage: "doc.text.magnifyingglass",
                                            description: Text("The file may be binary, empty, or only have mode changes."))
                 } else {
-                    ScrollView([.vertical, .horizontal]) {
+                    // Vertical only: long lines wrap instead of running off the side,
+                    // and every row is the full width so the green/red backgrounds reach the edge.
+                    ScrollView(.vertical) {
                         LazyVStack(alignment: .leading, spacing: 0) {
                             ForEach(diff.lines) { line in
                                 DiffLineView(line: line)
@@ -25,7 +27,7 @@ struct DiffView: View {
                                     .font(.caption).foregroundStyle(.secondary).padding()
                             }
                         }
-                        .frame(minWidth: 600, alignment: .leading)
+                        .frame(maxWidth: .infinity, alignment: .leading)
                     }
                 }
             }
@@ -69,19 +71,22 @@ private struct DiffLineView: View {
     let line: DiffLine
 
     var body: some View {
-        HStack(spacing: 0) {
+        HStack(alignment: .firstTextBaseline, spacing: 0) {
             number(line.oldNumber)
             number(line.newNumber)
             Text(marker)
                 .frame(width: 16)
                 .foregroundStyle(foreground)
+            // Wraps onto extra lines when it's wider than the panel; numbers stay on the first line.
             Text(line.text.isEmpty ? " " : line.text)
                 .foregroundStyle(line.kind == .hunk || line.kind == .meta ? .secondary : .primary)
-                .fixedSize(horizontal: true, vertical: false)
-            Spacer(minLength: 0)
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.trailing, 8)
         }
         .font(.system(size: 12, design: .monospaced))
-        .frame(height: 18)
+        .padding(.vertical, 1)
+        .frame(maxWidth: .infinity, minHeight: 18, alignment: .leading)
         .background(background)
         .textSelection(.enabled)
     }

@@ -160,3 +160,78 @@ struct NewBranchSheet: View {
         Task { await repo.createBranch(branch, at: startPoint) }
     }
 }
+
+/// ⌘P → "Commit & Push…": asks for a commit message, then commits and pushes.
+/// Uses the same draft as the commit panel, so nothing typed in either place is lost.
+struct CommitPromptSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    @Bindable var repo: Repo
+    @FocusState private var summaryFocused: Bool
+
+    /// What will be committed: the staged files, or everything when nothing is staged.
+    private var scope: String {
+        if !repo.staged.isEmpty {
+            let count = repo.staged.count
+            return "\(count) staged file\(count == 1 ? "" : "s")"
+        }
+        let count = repo.unstaged.count
+        return count == 1 ? "the 1 changed file" : "all \(count) changed files"
+    }
+
+    private var canCommit: Bool {
+        repo.busy == nil && !repo.draftSummary.trimmed.isEmpty && (repo.amend || repo.changeCount > 0)
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .firstTextBaseline) {
+                Text("Commit & Push").font(.title2.bold())
+                Spacer()
+                ReuseMessageMenu(repo: repo)
+            }
+            Text("Commits \(scope) to \(repo.branch) in \(repo.name), then pushes.")
+                .foregroundStyle(.secondary)
+
+            TextField("Summary", text: $repo.draftSummary)
+                .textFieldStyle(.roundedBorder)
+                .focused($summaryFocused)
+                .onSubmit(commit)
+
+            TextField("Description (optional)", text: $repo.draftBody, axis: .vertical)
+                .textFieldStyle(.roundedBorder)
+                .lineLimit(3...6)
+
+            Toggle("Amend previous commit (squash into \(repo.headCommit?.shortID ?? "the last commit"))", isOn: $repo.amend)
+                .disabled(!repo.hasCommits)
+                .onChange(of: repo.amend) { _, amending in
+                    // Same as the commit panel: amending starts from the previous message.
+                    if amending, repo.draftSummary.trimmed.isEmpty, let message = repo.lastCommitMessage {
+                        repo.useMessage(message)
+                    }
+                }
+            if repo.amend && repo.headIsPushed {
+                Label("The last commit is already pushed, so this will force-push with lease.",
+                      systemImage: "exclamationmark.triangle.fill")
+                    .font(.system(size: 11))
+                    .foregroundStyle(.orange)
+            }
+
+            HStack {
+                Spacer()
+                Button("Cancel") { dismiss() }.keyboardShortcut(.cancelAction)
+                Button(repo.amend && repo.headIsPushed ? "Amend & Force Push" : "Commit & Push", action: commit)
+                    .keyboardShortcut(.defaultAction)
+                    .disabled(!canCommit)
+            }
+        }
+        .padding(20)
+        .frame(width: 480)
+        .onAppear { summaryFocused = true }
+    }
+
+    private func commit() {
+        guard canCommit else { return }
+        dismiss()
+        Task { await repo.commit(andPush: true) }
+    }
+}

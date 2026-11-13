@@ -16,6 +16,8 @@ final class RepoStore {
 
     var showPalette = false
     var showClone = false
+    /// ⌘P → "Commit & Push…": asks for the message, then commits and pushes the open repo.
+    var showCommitPrompt = false
     var showNewBranch = false {
         didSet { if !showNewBranch { newBranchStartPoint = nil } }
     }
@@ -250,6 +252,9 @@ final class RepoStore {
 
         if let repo = selected {
             let name = repo.name
+            if repo.changeCount > 0 {
+                add("Commit & Push…", name, "arrow.up.circle") { [weak self] in self?.showCommitPrompt = true }
+            }
             add("Pull", name, "arrow.down.to.line") { Task { await repo.pull() } }
             add("Push", name, "arrow.up.to.line") { Task { await repo.push() } }
             add("Force Push (with lease)", name, "exclamationmark.arrow.triangle.2.circlepath") { Task { await repo.push(force: true) } }
